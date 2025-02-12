@@ -1,25 +1,24 @@
-# Use a lightweight Python image
+# Use a base image with Python
 FROM python:3.9-slim
 
-# Set the working directory inside the container
+# Install dependencies and Nginx
+RUN apt-get update && apt-get install -y nginx && rm -rf /var/lib/apt/lists/*
+
+# Set up working directory
 WORKDIR /app
 
-# Copy only the requirements file first (for better caching)
-COPY requirements.txt /app/
+# Copy requirements and install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Upgrade pip and install dependencies
-# RUN pip install --no-cache-dir --upgrade pip && \
-#     pip install --no-cache-dir -r requirements.txt
+# Copy FastAPI app
+COPY . .
 
-RUN  pip install --no-cache-dir --timeout=100 --index-url https://pypi.org/simple -r requirements.txt
+# Copy the Nginx configuration file
+COPY nginx.conf /etc/nginx/nginx.conf
 
+# Expose ports
+EXPOSE 10000
 
-# Copy the rest of the application
-COPY . /app
-
-# Expose necessary ports
-EXPOSE 8000
-
-# Start the FastAPI server
+# Start both FastAPI and Nginx
 CMD uvicorn app.main:app --host 0.0.0.0 --port 8000 & nginx -g "daemon off;"
-
