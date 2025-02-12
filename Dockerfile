@@ -11,14 +11,17 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Ensure FastAPI and Uvicorn are installed
+RUN pip install --no-cache-dir fastapi uvicorn
+
 # Copy FastAPI app
 COPY . .
 
 # Copy the Nginx configuration file
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# Expose ports
+# Expose Render's expected port
 EXPOSE 10000
 
-# Start both FastAPI and Nginx
-CMD uvicorn app.main:app --host 0.0.0.0 --port 8000 & nginx -g "daemon off;"
+# Start Nginx in the background and then FastAPI
+CMD service nginx start && uvicorn main:app --host 0.0.0.0 --port 8000
