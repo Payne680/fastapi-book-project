@@ -8,6 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -20,9 +21,27 @@ jobs:
       - name: Deploy to EC2
         run: |
           ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
-            cd /home/ubuntu/your-fastapi-repo
-            git pull origin main
+            # Check if the repo exists, if not clone it
+            if [ ! -d "/home/ubuntu/your-fastapi-repo" ]; then
+              echo "Repository not found, cloning..."
+              git clone https://github.com/yourusername/your-repo.git /home/ubuntu/your-fastapi-repo
+            fi
+            
+            cd /home/ubuntu/your-fastapi-repo || exit
+            git pull origin main || exit
+
+            # Ensure venv exists and activate it
+            if [ ! -d "venv" ]; then
+              echo "Virtual environment not found. Creating it..."
+              python3 -m venv venv
+            fi
             source venv/bin/activate
+
+            # Install dependencies
             pip install -r requirements.txt
-            sudo systemctl restart fastapi
+
+            # Restart the service (e.g., FastAPI)
+            sudo systemctl restart fastapi || exit
+
+            echo "Deployment successful!"
           EOF
