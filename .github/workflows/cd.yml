@@ -24,7 +24,7 @@ jobs:
             # Check if the repo exists, if not clone it
             if [ ! -d "/home/ubuntu/your-fastapi-repo" ]; then
               echo "Repository not found, cloning..."
-              git clone https://github.com/yourusername/your-repo.git /home/ubuntu/your-fastapi-repo
+              git clone https://github.com/payne680/your-repo.git /home/ubuntu/your-fastapi-repo
             fi
             
             cd /home/ubuntu/your-fastapi-repo || exit
