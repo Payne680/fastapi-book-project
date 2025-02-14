@@ -73,13 +73,6 @@ pip install -r requirements.txt
 ```bash
 uvicorn main:app
 ```
-```docker
- docker build -t fastapi-book-app .   
-```
-```Running docker
-docker run -p 80:80 -p 8000:8000 fastapi-book-app   x
-```
-
 
 2. Access the API documentation:
 
