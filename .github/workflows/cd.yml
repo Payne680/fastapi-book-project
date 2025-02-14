@@ -13,24 +13,38 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set up SSH key
+      - name: Set up SSH key for EC2 access
         run: |
           echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > private_key.pem
           chmod 600 private_key.pem
+          mkdir -p ~/.ssh
+          cp private_key.pem ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Add GitHub to known hosts (to prevent SSH warnings)
+        run: |
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: Set up SSH key for GitHub access
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/github_id_rsa
+          chmod 600 ~/.ssh/github_id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
 
       - name: Deploy to EC2
         run: |
-          ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
-            # Check if the repo exists, if not clone it
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+            # Ensure repository exists on the EC2 instance
             if [ ! -d "/home/ubuntu/your-fastapi-repo" ]; then
               echo "Repository not found, cloning..."
-              git clone https://github.com/payne680/your-repo.git /home/ubuntu/your-fastapi-repo
+              git clone git@github.com:Payne680/fastapi-book-project.git /home/ubuntu/fastapi-book-project
             fi
-            
-            cd /home/ubuntu/your-fastapi-repo || exit
+
+            cd /home/ubuntu/fastapi-book-project || exit
             git pull origin main || exit
 
-            # Ensure venv exists and activate it
+            # Ensure virtual environment exists and activate it
             if [ ! -d "venv" ]; then
               echo "Virtual environment not found. Creating it..."
               python3 -m venv venv
@@ -40,7 +54,7 @@ jobs:
             # Install dependencies
             pip install -r requirements.txt
 
-            # Restart the service (e.g., FastAPI)
+            # Restart FastAPI service
             sudo systemctl restart fastapi || exit
 
             echo "Deployment successful!"
